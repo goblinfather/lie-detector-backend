@@ -1,31 +1,28 @@
 from flask import Flask, request, jsonify
 import librosa
 import numpy as np
-import os
-import soundfile as sf
 import uuid
+import os
+import subprocess
 
 app = Flask(__name__)
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
     file = request.files['file']
+    webm_path = f"{uuid.uuid4()}.webm"
+    wav_path = webm_path.replace('.webm', '.wav')
 
-    # 고유 파일명 생성
-    temp_filename = f"{uuid.uuid4()}.webm"
-    file.save(temp_filename)
+    file.save(webm_path)
 
-    # webm → wav 변환
-    wav_filename = temp_filename.replace('.webm', '.wav')
+    # ffmpeg로 webm → wav 변환
     try:
-        data, samplerate = sf.read(temp_filename)
-        sf.write(wav_filename, data, samplerate)
-    except:
-        return jsonify({'result': '오류: 변환 실패'}), 400
+        subprocess.run(['ffmpeg', '-i', webm_path, wav_path], check=True)
+    except subprocess.CalledProcessError:
+        return jsonify({'result': '오류: ffmpeg 변환 실패'}), 500
 
-    # 음성 분석
     try:
-        y, sr = librosa.load(wav_filename, sr=None)
+        y, sr = librosa.load(wav_path, sr=None)
         pitch = librosa.yin(y, fmin=50, fmax=300)
         energy = np.mean(np.abs(y))
 
@@ -33,9 +30,9 @@ def analyze():
         if np.std(pitch) > 30 or energy > 0.2:
             result = "lie"
     except Exception as e:
-        return jsonify({'result': f'오류: {str(e)}'}), 500
+        return jsonify({'result': f'분석 오류: {str(e)}'}), 500
     finally:
-        os.remove(temp_filename)
-        os.remove(wav_filename)
+        os.remove(webm_path)
+        os.remove(wav_path)
 
     return jsonify({'result': result})
