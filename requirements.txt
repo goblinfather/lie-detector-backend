@@ -3,4 +3,3 @@ librosa
 numpy
 soundfile
 scikit-learn
-ffmpeg-python
