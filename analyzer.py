@@ -2,7 +2,8 @@ import librosa
 import numpy as np
 
 def analyze_audio(filepath):
-    y, sr = librosa.load(filepath)
+    # 5초까지만 로딩 (메모리 절약)
+    y, sr = librosa.load(filepath, sr=None, duration=5.0)
 
     # 특징 추출
     energy = np.mean(np.abs(y))
@@ -10,7 +11,7 @@ def analyze_audio(filepath):
     pitch_std = np.std(pitch)
     zcr = np.mean(librosa.feature.zero_crossing_rate(y))
 
-    # 판별 규칙
+    # 간단한 판단 로직
     score = 0
     if energy > 0.15:
         score += 1
