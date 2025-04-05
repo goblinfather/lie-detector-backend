@@ -5,10 +5,13 @@ import uuid
 
 app = Flask(__name__)
 
+# 업로드 최대 크기 제한 (2MB)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     file = request.files['file']
-    filename = f"{uuid.uuid4()}.wav"
+    filename = f"{uuid.uuid4()}.webm"
     file.save(filename)
 
     try:
